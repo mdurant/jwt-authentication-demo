@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
-use Illuminate\Validation\Validator;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\JsonResponse;
 
 class AuthController extends Controller
@@ -27,7 +27,7 @@ class AuthController extends Controller
             return response()->json($validator->errors(), 400);
         }
 
-        $user = User::create(array_merge(
+        $user = \App\Models\User::create(array_merge(
             $validator->validated(),
             ['password' => bcrypt($request->password)]
         ));
@@ -48,7 +48,10 @@ class AuthController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        return $this->respondWithToken($token);
+        // Genera un segundo token (id_token) o usa el mismo token para simplificación
+        $idToken = $this->generateIdToken();
+
+        return $this->respondWithToken($token, $idToken);
     }
     /**
      * Get the authenticated User.
@@ -75,7 +78,11 @@ class AuthController extends Controller
      * @return \Illuminate\Http\JsonResponse
      */
     public function refresh(){
-        return $this->respondWithToken(auth()->refresh());
+
+        $token = auth()->refresh();
+        $idToken = $this->generateIdToken();
+
+        return $this->respondWithToken($token, $idToken);
     }
     /**
      * Get the token array structure.
@@ -84,12 +91,19 @@ class AuthController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    protected function respondWithToken($token){
+    protected function respondWithToken($token, $idToken){
         return response()->json([
             'access_token' => $token,
             'token_type' => 'bearer',
-            'expires_in' => auth()->factory()->getTTL() * 60
+            'expires_in' => auth()->factory()->getTTL() * 60,
+            'id_token' => $idToken, // Incluye el id_token en la respuesta
         ]);
+    }
+
+    protected function generateIdToken()
+    {
+        //generar un nuevo JWT, o simplemente devolver el mismo token por simplicidad
+        return auth()->claims(['sub' => auth()->user()->id])->tokenById(auth()->user()->id);
     }
 }
 
