@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\LocationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -18,3 +19,5 @@ Route::group([
     Route::post('/refresh', [AuthController::class, 'refresh'])->middleware('auth:api')->name('refresh');
     Route::post('/userinfo', [AuthController::class, 'userinfo'])->middleware('auth:api')->name('userinfo');
 });
+
+Route::apiResource('locations', LocationController::class)->middleware('auth:api');
